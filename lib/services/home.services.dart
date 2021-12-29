@@ -1,6 +1,13 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class HomeController extends ChangeNotifier {
+  int selectedBottomNavItem = 0;
+
+  void onBottomNavTabChange(index) {
+    selectedBottomNavItem = index;
+    notifyListeners();
+  }
+
   bool isRightDoorLocked = true;
   bool isLeftDoorLocked = true;
   bool isToptDoorLocked = true;
