@@ -1,8 +1,13 @@
 import 'package:animated_tesla_app/const.dart';
+import 'package:animated_tesla_app/models/tyre_psi.dart';
 import 'package:animated_tesla_app/services/home.services.dart';
 import 'package:animated_tesla_app/widgets/battery_status.dart';
 import 'package:animated_tesla_app/widgets/bottom_navbar.dart';
 import 'package:animated_tesla_app/widgets/door_lock.dart';
+import 'package:animated_tesla_app/widgets/temp_btn.dart';
+import 'package:animated_tesla_app/widgets/temp_details.dart';
+import 'package:animated_tesla_app/widgets/tyre_psi_card.dart';
+import 'package:animated_tesla_app/widgets/tyres.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -20,6 +25,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _batteryStatusAnimation;
   late AnimationController _tempAnimationController;
   late Animation<double> _carShiftAnimation;
+  late Animation<double> _tempInfoAnimation;
+  late Animation<double> _glowAnimation;
+  late AnimationController _tyreAnimationController;
+  late Animation<double> _tyre1Animation;
+  late Animation<double> _tyre2Animation;
+  late Animation<double> _tyre3Animation;
+  late Animation<double> _tyre4Animation;
+
+  late List<Animation<double>> tyreAnimations;
+
   void setupAnimations() {
     // batteryanimation :
     _batteryAnimationController =
@@ -28,16 +43,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         parent: _batteryAnimationController, curve: const Interval(0, 0.5));
     _batteryStatusAnimation = CurvedAnimation(
         parent: _batteryAnimationController, curve: const Interval(0.6, 1));
+
     // temp animation:
     _tempAnimationController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1500));
     _carShiftAnimation = CurvedAnimation(
         parent: _tempAnimationController, curve: const Interval(0.3, 0.5));
+    _tempInfoAnimation = CurvedAnimation(
+        parent: _tempAnimationController, curve: const Interval(0.55, 0.75));
+    _glowAnimation = CurvedAnimation(
+        parent: _tempAnimationController, curve: const Interval(0.8, 1));
+
+    // tyre animations:
+    _tyreAnimationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200));
+    _tyre1Animation = CurvedAnimation(
+        parent: _tyreAnimationController, curve: const Interval(0.34, 0.5));
+    _tyre2Animation = CurvedAnimation(
+        parent: _tyreAnimationController, curve: const Interval(0.5, 0.66));
+    _tyre3Animation = CurvedAnimation(
+        parent: _tyreAnimationController, curve: const Interval(0.66, 0.82));
+    _tyre4Animation = CurvedAnimation(
+        parent: _tyreAnimationController, curve: const Interval(0.82, 1));
   }
 
   @override
   void initState() {
     setupAnimations();
+    tyreAnimations = [
+      _tyre1Animation,
+      _tyre2Animation,
+      _tyre3Animation,
+      _tyre4Animation
+    ];
     super.initState();
   }
 
@@ -54,7 +92,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         animation: Listenable.merge([
           _homeController,
           _batteryAnimationController,
-          _tempAnimationController
+          _tempAnimationController,
+          _tyreAnimationController,
         ]),
         builder: (context, snapshot) {
           return Scaffold(
@@ -146,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
+                      // battery page:
                       Opacity(
                         opacity: _batteryAnimation.value,
                         child: SvgPicture.asset(
@@ -164,6 +204,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
+                      // temp page:
+                      Positioned(
+                        height: constrains.maxHeight,
+                        width: constrains.maxWidth,
+                        top: 20 * (1 - _tempInfoAnimation.value),
+                        child: Opacity(
+                          opacity: _tempInfoAnimation.value,
+                          child: TempDetails(homeController: _homeController),
+                        ),
+                      ),
+                      Positioned(
+                        right: -180 * (1 - _glowAnimation.value),
+                        child: Image.asset(
+                          _homeController.isCoolSelected
+                              ? "assets/images/Cool_glow_2.png"
+                              : "assets/images/Hot_glow_4.png",
+                          width: 200,
+                        ),
+                      ),
+                      // tyre :
+                      if (_homeController.showTyres) ...tyres(constrains),
+                      if (_homeController.showTyresStatus)
+                        GridView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: 4,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: defaultPadding,
+                              crossAxisSpacing: defaultPadding,
+                              childAspectRatio:
+                                  constrains.maxWidth / constrains.maxHeight,
+                            ),
+                            itemBuilder: (context, index) {
+                              return ScaleTransition(
+                                scale: tyreAnimations[index],
+                                child: TyrePsiCard(
+                                  isBottomTyres: index > 1,
+                                  tyrePsi: demoPsiList[index],
+                                ),
+                              );
+                            }),
                     ],
                   );
                 },
@@ -184,7 +266,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     value != 2) {
                   _tempAnimationController.reverse(from: 0.4);
                 }
+
+                if (value == 3) {
+                  _tyreAnimationController.forward();
+                } else if (_homeController.selectedBottomNavItem == 3 &&
+                    value != 3) {
+                  _tyreAnimationController.reverse(from: 0.4);
+                }
+
                 _homeController.onBottomNavTabChange(value);
+                _homeController.updateShowTyres(value);
               },
               selectedTab: _homeController.selectedBottomNavItem,
             ),

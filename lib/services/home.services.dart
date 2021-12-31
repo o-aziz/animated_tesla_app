@@ -32,4 +32,36 @@ class HomeController extends ChangeNotifier {
     isBottomDoorLocked = !isBottomDoorLocked;
     notifyListeners();
   }
+
+  bool isCoolSelected = true;
+  updateCoolSelectedTab() {
+    isCoolSelected = !isCoolSelected;
+    notifyListeners();
+  }
+
+  bool showTyres = false;
+  bool showTyresStatus = false;
+
+  updateShowTyres(int index) {
+    if (index == 3 && selectedBottomNavItem == 3) {
+      Future.delayed(
+        const Duration(milliseconds: 400),
+        () {
+          showTyres = true;
+          notifyListeners();
+          Future.delayed(
+            const Duration(milliseconds: 200),
+            () {
+              showTyresStatus = true;
+              notifyListeners();
+            },
+          );
+        },
+      );
+    } else {
+      showTyres = false;
+      showTyresStatus = false;
+      notifyListeners();
+    }
+  }
 }
